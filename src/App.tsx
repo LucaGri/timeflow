@@ -15,6 +15,7 @@ import Calendar from './pages/Calendar'
 import Analytics from './pages/Analytics'
 import Journal from './pages/Journal'
 import Settings from './pages/Settings'
+import GoogleCallback from './pages/auth/GoogleCallback'
 
 // Components
 import LoadingScreen from './components/ui/LoadingScreen'
@@ -57,6 +58,9 @@ function App() {
           element={session ? <Navigate to="/dashboard" /> : <Signup />}
         />
       </Route>
+
+      {/* Google OAuth callback - NUOVA RIGA */}
+      <Route path="/auth/callback" element={<GoogleCallback />} />
 
       {/* Protected routes */}
       <Route

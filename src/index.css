@@ -65,7 +65,9 @@
 }
 
 .rbc-header {
-  @apply border-border bg-muted/50 py-3 font-semibold;
+  @apply border-border bg-muted/50 font-semibold;
+  padding: 6px 8px !important;
+  font-size: 0.875rem !important;
 }
 
 .rbc-today {
@@ -111,4 +113,144 @@
 
 .animate-spin {
   animation: spin 1s linear infinite;
+}
+
+/* Header calendario sticky */
+.rbc-time-view .rbc-time-header {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 10 !important;
+  background: white !important;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+}
+
+/* Dark mode support */
+.dark .rbc-time-view .rbc-time-header {
+  background: hsl(var(--background)) !important;
+}
+
+/* Migliora visibilità orari */
+.rbc-time-view {
+  overflow-y: auto !important;
+}
+
+/* Riduce altezza della barra header con i giorni */
+.rbc-time-header-content {
+  min-height: 40px !important;
+  max-height: 40px !important;
+}
+
+.rbc-time-header.rbc-overflowing {
+  border-right: 1px solid #ddd;
+}
+
+.rbc-rtl .rbc-time-header.rbc-overflowing {
+  border-right-width: 0;
+  border-left: 1px solid #ddd;
+}
+
+/* Rimuove spazio vuoto sopra la prima ora */
+.rbc-time-content > * + * > * {
+  border-left: 1px solid #ddd;
+}
+
+.rbc-day-slot .rbc-time-slot {
+  border-top: 1px solid #f0f0f0;
+}
+
+.rbc-time-content {
+  border-top: none !important;
+}
+
+.rbc-allday-cell {
+  display: none !important;
+}
+
+/* Nasconde header nella vista giorno */
+.rbc-time-view .rbc-time-header-content .rbc-row.rbc-row-resource {
+  display: none !important;
+}
+
+.rbc-time-view .rbc-time-header-content .rbc-header {
+  display: block !important;
+}
+
+.rbc-time-view .rbc-time-header-content:has(.rbc-header:only-child) {
+  display: none !important;
+}
+
+body:has([class*="day"]) .rbc-time-header-content {
+  height: 0 !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+.rbc-time-header-content {
+  height: auto !important;
+}
+
+.rbc-time-header-content:empty {
+  display: none !important;
+}
+
+/* Fix allineamento vista Agenda - versione definitiva */
+.rbc-agenda-view .rbc-agenda-table {
+  table-layout: fixed !important;
+  width: 100% !important;
+  border-collapse: collapse !important;
+}
+
+/* Reset padding di default */
+.rbc-agenda-view .rbc-agenda-table tbody > tr > td {
+  padding: 8px 12px !important;
+  vertical-align: top !important;
+  text-transform: none !important;
+}
+
+/* Colonna DATA */
+.rbc-agenda-view .rbc-agenda-date-cell {
+  width: 120px !important;
+  min-width: 120px !important;
+  max-width: 120px !important;
+  padding: 8px 12px !important;
+  padding-left: 12px !important;
+  padding-right: 12px !important;
+}
+
+/* Colonna ORA */
+.rbc-agenda-view .rbc-agenda-time-cell {
+  width: 200px !important;
+  min-width: 200px !important;
+  max-width: 200px !important;
+  padding: 8px 12px !important;
+  padding-left: 12px !important;
+  padding-right: 12px !important;
+  white-space: nowrap !important;
+  text-transform: none !important;
+}
+
+/* Colonna EVENTO */
+.rbc-agenda-view .rbc-agenda-event-cell {
+  padding: 8px 12px !important;
+  padding-left: 12px !important;
+  padding-right: 12px !important;
+  text-transform: none !important;
+  width: auto !important;
+}
+
+/* Header tabella */
+.rbc-agenda-view .rbc-agenda-table thead > tr > th {
+  padding: 10px 12px !important;
+  font-weight: 600 !important;
+  text-align: left !important;
+}
+
+/* Prima colonna header */
+.rbc-agenda-view .rbc-agenda-table thead > tr > th:first-child {
+  width: 120px !important;
+}
+
+/* Seconda colonna header */
+.rbc-agenda-view .rbc-agenda-table thead > tr > th:nth-child(2) {
+  width: 200px !important;
 }
