@@ -16,6 +16,8 @@ import Analytics from './pages/Analytics'
 import Journal from './pages/Journal'
 import Settings from './pages/Settings'
 import GoogleCallback from './pages/auth/GoogleCallback'
+import ForgotPassword from './pages/auth/ForgotPassword'
+import ResetPassword from './pages/auth/ResetPassword'
 
 // Components
 import LoadingScreen from './components/ui/LoadingScreen'
@@ -48,16 +50,24 @@ function App() {
   return (
     <Routes>
       {/* Public routes */}
-      <Route element={<AuthLayout />}>
-        <Route
-          path="/login"
-          element={session ? <Navigate to="/dashboard" /> : <Login />}
-        />
-        <Route
-          path="/signup"
-          element={session ? <Navigate to="/dashboard" /> : <Signup />}
-        />
-      </Route>
+<Route element={<AuthLayout />}>
+  <Route
+    path="/login"
+    element={session ? <Navigate to="/dashboard" /> : <Login />}
+  />
+  <Route
+    path="/signup"
+    element={session ? <Navigate to="/dashboard" /> : <Signup />}
+  />
+  <Route
+    path="/forgot-password"
+    element={session ? <Navigate to="/dashboard" /> : <ForgotPassword />}
+  />
+</Route>
+
+{/* Auth callbacks */}
+<Route path="/auth/callback" element={<GoogleCallback />} />
+<Route path="/auth/reset-password" element={<ResetPassword />} />
 
       {/* Google OAuth callback - NUOVA RIGA */}
       <Route path="/auth/callback" element={<GoogleCallback />} />

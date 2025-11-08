@@ -77,6 +77,16 @@ export default function Login() {
         <Button type="submit" className="w-full" disabled={loading}>
           {loading ? 'Accesso in corso...' : 'Accedi'}
         </Button>
+
+        {/* Link Password Dimenticata */}
+        <div className="text-center">
+          <Link
+            to="/forgot-password"
+            className="text-sm text-primary hover:underline"
+          >
+            Password dimenticata?
+          </Link>
+        </div>
       </form>
 
       <p className="mt-6 text-center text-sm text-muted-foreground">
