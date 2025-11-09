@@ -210,9 +210,6 @@ export default function Calendar() {
           scrollToTime={scrollToTime}
           min={new Date(1970, 1, 1, 6, 0, 0)}  // ← NUOVA RIGA: Inizia da 6:00
           max={new Date(1970, 1, 1, 23, 0, 0)} // ← NUOVA RIGA: Finisce a 23:00
-          components={{
-          timeGutterHeader: view === 'day' ? () => null : undefined,
-          }}
           onSelectSlot={handleSelectSlot}
           onSelectEvent={handleSelectEvent}
           selectable
