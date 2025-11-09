@@ -15,6 +15,12 @@ import { syncFromGoogle } from '@/lib/google/calendar'
 import { detectAllConflicts, Conflict } from '@/lib/conflicts/detectConflicts'
 
 moment.locale('it')
+// Imposta lunedì come primo giorno della settimana
+moment.updateLocale('it', {
+  week: {
+    dow: 1, // Monday is the first day of the week (0 = Sunday, 1 = Monday)
+  },
+})
 const localizer = momentLocalizer(moment)
 
 type CalendarEvent = {
