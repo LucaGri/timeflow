@@ -55,12 +55,11 @@ export type Event = {
 export type JournalEntry = {
   id: string
   user_id: string
-  event_id: string | null
+  entry_date: string
+  title: string | null
   content: string
   mood: 'great' | 'good' | 'neutral' | 'bad' | 'terrible' | null
-  energy_rating: number | null
   tags: string[]
-  is_prompt_response: boolean
   created_at: string
   updated_at: string
 }
