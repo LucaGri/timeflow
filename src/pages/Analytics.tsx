@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { supabase, Event as EventType } from '@/lib/supabase'
+import { supabase, Event as EventType, UserCategory } from '@/lib/supabase'
 import { calculateCategoryStats, calculateDailyStats, calculateWeekStats, getMostProductiveHour, calculateWeeklyStats } from '@/lib/analytics/timeStats'
 import CategoryStatsCard from '@/components/analytics/CategoryStatsCard'
 import WeekSummaryCard from '@/components/analytics/WeekSummaryCard'
@@ -7,6 +7,7 @@ import { Loader2, Lightbulb } from 'lucide-react'
 
 export default function Analytics() {
   const [events, setEvents] = useState<EventType[]>([])
+  const [categories, setCategories] = useState<UserCategory[]>([])
   const [loading, setLoading] = useState(true)
   const [timeRange, setTimeRange] = useState<'week' | 'month'>('week')
 
@@ -15,9 +16,23 @@ export default function Analytics() {
   }, [timeRange])
 
   const loadEvents = async () => {
-    setLoading(true)
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+    try {
+      setLoading(true)
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      // Load user categories
+      const { data: categoriesData, error: categoriesError } = await supabase
+        .from('user_categories')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('display_order', { ascending: true })
+
+      if (categoriesError) {
+        console.error('Error loading categories:', categoriesError)
+      } else {
+        setCategories(categoriesData || [])
+      }
 
     // Calcola range date
     const endDate = new Date()
@@ -43,7 +58,11 @@ export default function Analytics() {
     }
 
     setEvents(data || [])
-    setLoading(false)
+      setLoading(false)
+    } catch (err) {
+      console.error('Error loading analytics data:', err)
+      setLoading(false)
+    }
   }
 
   if (loading) {
@@ -54,8 +73,8 @@ export default function Analytics() {
     )
   }
 
-  const categoryStats = calculateCategoryStats(events)
-  const dailyStats = timeRange === 'week' 
+  const categoryStats = calculateCategoryStats(events, categories)
+  const dailyStats = timeRange === 'week'
     ? calculateDailyStats(events, 7)
     : calculateWeeklyStats(events, 4)
   const weekStats = calculateWeekStats(events)

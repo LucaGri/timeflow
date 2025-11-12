@@ -1,7 +1,8 @@
-import { Event as EventType } from '@/lib/supabase'
+import { Event as EventType, UserCategory } from '@/lib/supabase'
 
 export interface CategoryStats {
-  category: EventType['category']
+  categoryId: string
+  categoryName: string
   totalMinutes: number
   totalHours: number
   eventCount: number
@@ -44,20 +45,31 @@ const getCategoryColor = (category: EventType['category']): string => {
   return colors[category] || '#6b7280'
 }
 
-// Statistiche per categoria
-export const calculateCategoryStats = (events: EventType[]): CategoryStats[] => {
-  const categoryMap = new Map<EventType['category'], { minutes: number; count: number }>()
+// Statistiche per categoria (supporta categorie dinamiche)
+export const calculateCategoryStats = (
+  events: EventType[],
+  categories: UserCategory[]
+): CategoryStats[] => {
+  const categoryMap = new Map<string, { minutes: number; count: number; category: UserCategory }>()
+
+  // Crea mappa delle categorie per accesso rapido
+  const categoriesById = new Map<string, UserCategory>()
+  categories.forEach((cat) => categoriesById.set(cat.id, cat))
 
   // Somma minuti e conta eventi per categoria
   events.forEach((event) => {
-    const category = event.category || 'other'
-    const duration = getEventDuration(event)
+    // Usa category_id se disponibile, altrimenti salta l'evento
+    if (!event.category_id) return
 
-    if (!categoryMap.has(category)) {
-      categoryMap.set(category, { minutes: 0, count: 0 })
+    const duration = getEventDuration(event)
+    const category = categoriesById.get(event.category_id)
+    if (!category) return
+
+    if (!categoryMap.has(category.id)) {
+      categoryMap.set(category.id, { minutes: 0, count: 0, category })
     }
 
-    const current = categoryMap.get(category)!
+    const current = categoryMap.get(category.id)!
     current.minutes += duration
     current.count += 1
   })
@@ -70,19 +82,45 @@ export const calculateCategoryStats = (events: EventType[]): CategoryStats[] => 
 
   // Converti in array di CategoryStats
   const stats: CategoryStats[] = []
-  categoryMap.forEach((value, category) => {
+  categoryMap.forEach((value) => {
     stats.push({
-      category,
+      categoryId: value.category.id,
+      categoryName: value.category.name,
       totalMinutes: Math.round(value.minutes),
       totalHours: Math.round((value.minutes / 60) * 10) / 10,
       eventCount: value.count,
       percentage: totalMinutes > 0 ? Math.round((value.minutes / totalMinutes) * 100) : 0,
-      color: getCategoryColor(category),
+      color: value.category.color,
     })
   })
 
-  // Ordina per tempo decrescente
-  return stats.sort((a, b) => b.totalMinutes - a.totalMinutes)
+  // Ordina per tempo decrescente e prendi i top 5 + "Other"
+  const sortedStats = stats.sort((a, b) => b.totalMinutes - a.totalMinutes)
+
+  // Se ci sono più di 5 categorie, raggruppa le rimanenti in "Other"
+  if (sortedStats.length > 5) {
+    const top5 = sortedStats.slice(0, 5)
+    const others = sortedStats.slice(5)
+
+    const otherTotalMinutes = others.reduce((sum, stat) => sum + stat.totalMinutes, 0)
+    const otherEventCount = others.reduce((sum, stat) => sum + stat.eventCount, 0)
+
+    if (otherTotalMinutes > 0) {
+      top5.push({
+        categoryId: 'other',
+        categoryName: 'Altro',
+        totalMinutes: Math.round(otherTotalMinutes),
+        totalHours: Math.round((otherTotalMinutes / 60) * 10) / 10,
+        eventCount: otherEventCount,
+        percentage: totalMinutes > 0 ? Math.round((otherTotalMinutes / totalMinutes) * 100) : 0,
+        color: '#6b7280',
+      })
+    }
+
+    return top5
+  }
+
+  return sortedStats
 }
 
 // Statistiche giornaliere

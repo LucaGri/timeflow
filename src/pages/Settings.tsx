@@ -5,9 +5,11 @@ import { initiateGoogleAuth, disconnectGoogle } from '@/lib/google/auth'
 import { Calendar, CheckCircle, XCircle, Loader2 } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 import { Eye, EyeOff } from 'lucide-react'
+import { CategoryManager } from '@/components/categories/CategoryManager'
 
 export default function Settings() {
   const [profile, setProfile] = useState<Profile | null>(null)
+  const [userId, setUserId] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [disconnecting, setDisconnecting] = useState(false)
   const [showChangePassword, setShowChangePassword] = useState(false)
@@ -26,12 +28,13 @@ export default function Settings() {
   const loadProfile = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (user) {
+      setUserId(user.id)
       const { data } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
         .single()
-      
+
       setProfile(data)
     }
     setLoading(false)
@@ -232,7 +235,7 @@ const handleChangePassword = async (e: React.FormEvent) => {
       </div>
 
       {/* Password Section */}
-      <div className="rounded-lg border bg-card p-4 sm:p-6">
+      <div className="mb-6 sm:mb-8 rounded-lg border bg-card p-4 sm:p-6">
         <div className="mb-3 sm:mb-4">
           <h2 className="text-lg sm:text-xl font-semibold">Password</h2>
           <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
@@ -326,6 +329,13 @@ const handleChangePassword = async (e: React.FormEvent) => {
           </form>
         )}
       </div>
+
+      {/* Category Management Section */}
+      {userId && (
+        <div className="rounded-lg border bg-card p-4 sm:p-6">
+          <CategoryManager userId={userId} />
+        </div>
+      )}
     </div>
   )
 }

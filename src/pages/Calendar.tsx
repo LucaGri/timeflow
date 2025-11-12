@@ -3,7 +3,7 @@ import { View } from 'react-big-calendar'
 import { supabase } from '@/lib/supabase'
 import { Event as EventType } from '@/lib/supabase'
 import { Button } from '@/components/ui/Button'
-import { Plus, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Plus, RefreshCw, ChevronLeft, ChevronRight, Settings } from 'lucide-react'
 import EventModal from '@/components/calendar/EventModal'
 import { ConflictIndicatorButton } from '@/components/calendar/ConflictIndicatorButton'
 import ConflictList from '@/components/calendar/ConflictList'
@@ -16,6 +16,7 @@ import { syncFromGoogle } from '@/lib/google/calendar'
 import { detectAllConflicts, Conflict } from '@/lib/conflicts/detectConflicts'
 import { addDays, addWeeks, addMonths, startOfWeek, format } from 'date-fns'
 import { it } from 'date-fns/locale'
+import { CategoryManageModal } from '@/components/categories/CategoryManageModal'
 
 type CalendarEvent = {
   id: string
@@ -35,6 +36,8 @@ export default function Calendar() {
   const [profile, setProfile] = useState<any>(null)
   const [conflicts, setConflicts] = useState<Conflict[]>([])
   const [showConflictList, setShowConflictList] = useState(false)
+  const [showCategoryModal, setShowCategoryModal] = useState(false)
+  const [userId, setUserId] = useState<string>('')
 
   // Navigation handlers
   const handleNavigate = (direction: 'prev' | 'next' | 'today') => {
@@ -89,6 +92,7 @@ export default function Calendar() {
     const loadProfile = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
+        setUserId(user.id)
         const { data } = await supabase
           .from('profiles')
           .select('google_calendar_connected')
@@ -102,33 +106,39 @@ export default function Calendar() {
 
   // Load events from Supabase
   const loadEvents = useCallback(async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
 
-    const { data, error } = await supabase
-      .from('events')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('start_time', { ascending: true })
+      const { data, error } = await supabase
+        .from('events')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('start_time', { ascending: true })
 
-    if (error) {
-      console.error('Error loading events:', error)
-      return
-    }
+      if (error) {
+        console.error('Error loading events:', error)
+        // Don't throw - just log and continue with empty events
+        return
+      }
 
-    if (data) {
-      const calendarEvents: CalendarEvent[] = data.map((event: EventType) => ({
-        id: event.id,
-        title: event.title,
-        start: new Date(event.start_time),
-        end: new Date(event.end_time),
-        resource: event,
-      }))
-      setEvents(calendarEvents)
-      
-      // Detect conflicts
-      const detectedConflicts = detectAllConflicts(data)
-      setConflicts(detectedConflicts)
+      if (data) {
+        const calendarEvents: CalendarEvent[] = data.map((event: EventType) => ({
+          id: event.id,
+          title: event.title,
+          start: new Date(event.start_time),
+          end: new Date(event.end_time),
+          resource: event,
+        }))
+        setEvents(calendarEvents)
+
+        // Detect conflicts
+        const detectedConflicts = detectAllConflicts(data)
+        setConflicts(detectedConflicts)
+      }
+    } catch (err) {
+      console.error('Exception loading events:', err)
+      // Continue with empty events instead of crashing
     }
   }, [])
 
@@ -212,6 +222,15 @@ export default function Calendar() {
               conflicts={conflicts}
               onClick={() => setShowConflictList(true)}
             />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowCategoryModal(true)}
+              title="Gestisci Categorie"
+            >
+              <Settings className="mr-0 sm:mr-2 h-4 w-4" />
+              <span className="hidden sm:inline">Categorie</span>
+            </Button>
             {profile?.google_calendar_connected && (
               <Button
                 variant="outline"
@@ -367,6 +386,15 @@ export default function Calendar() {
         <ConflictList
           conflicts={conflicts}
           onClose={() => setShowConflictList(false)}
+        />
+      )}
+
+      {showCategoryModal && userId && (
+        <CategoryManageModal
+          isOpen={showCategoryModal}
+          onClose={() => setShowCategoryModal(false)}
+          userId={userId}
+          onUpdate={loadEvents}
         />
       )}
     </>

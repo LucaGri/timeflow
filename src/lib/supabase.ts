@@ -32,6 +32,18 @@ export type Profile = {
   updated_at: string
 }
 
+export type UserCategory = {
+  id: string
+  user_id: string
+  name: string
+  color: string
+  icon: string | null
+  is_default: boolean
+  display_order: number
+  created_at: string
+  updated_at: string
+}
+
 export type Event = {
   id: string
   user_id: string
@@ -40,7 +52,8 @@ export type Event = {
   start_time: string
   end_time: string
   all_day: boolean
-  category: 'meeting' | 'deep_work' | 'admin' | 'personal' | 'break' | 'other'
+  category: 'meeting' | 'deep_work' | 'admin' | 'personal' | 'break' | 'other' // Deprecated: use category_id
+  category_id: string | null
   google_event_id: string | null
   google_calendar_id: string | null
   energy_level: number | null

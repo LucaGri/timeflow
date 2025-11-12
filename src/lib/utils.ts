@@ -44,7 +44,29 @@ export function isTrialExpired(trialEndsAt: string | null): boolean {
   return new Date(trialEndsAt) < new Date()
 }
 
-// Get category color
+// Preset colors for category customization
+export const PRESET_COLORS = [
+  { name: 'Blue', value: '#3b82f6' },
+  { name: 'Purple', value: '#8b5cf6' },
+  { name: 'Pink', value: '#ec4899' },
+  { name: 'Red', value: '#ef4444' },
+  { name: 'Orange', value: '#f59e0b' },
+  { name: 'Yellow', value: '#eab308' },
+  { name: 'Green', value: '#10b981' },
+  { name: 'Teal', value: '#14b8a6' },
+  { name: 'Cyan', value: '#06b6d4' },
+  { name: 'Gray', value: '#64748b' },
+  { name: 'Dark Gray', value: '#6b7280' },
+  { name: 'Black', value: '#000000' },
+] as const
+
+// Validate HEX color format
+export function validateHexColor(color: string): boolean {
+  return /^#[0-9A-F]{6}$/i.test(color)
+}
+
+// Get category color (DEPRECATED: use category.color from database)
+// This function is kept for backward compatibility during migration
 export function getCategoryColor(category: string): string {
   const colors: Record<string, string> = {
     meeting: '#3b82f6', // blue

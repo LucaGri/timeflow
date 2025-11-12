@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { supabase, Event as EventType } from '@/lib/supabase'
+import { supabase, Event as EventType, UserCategory } from '@/lib/supabase'
 import { Button } from '@/components/ui/Button'
 import { X, Trash2, MapPin } from 'lucide-react'
 import { createGoogleEvent, updateGoogleEvent, deleteGoogleEvent } from '@/lib/google/calendar'
@@ -16,23 +16,86 @@ export default function EventModal({ event, onClose, onSave }: EventModalProps) 
   const [description, setDescription] = useState('')
   const [startTime, setStartTime] = useState('')
   const [endTime, setEndTime] = useState('')
-  const [category, setCategory] = useState<EventType['category']>('other')
+  const [categoryId, setCategoryId] = useState<string>('')
+  const [categories, setCategories] = useState<UserCategory[]>([])
   const [importance, setImportance] = useState(3)
   const [location, setLocation] = useState('')
   const [isAllDay, setIsAllDay] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // Load user categories
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+          setError('Utente non autenticato')
+          return
+        }
+
+        const { data, error } = await supabase
+          .from('user_categories')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('display_order', { ascending: true })
+
+        if (error) {
+          console.error('Error loading categories:', error)
+          setError('Errore nel caricamento delle categorie. Verifica che la migrazione del database sia stata eseguita.')
+          return
+        }
+
+        if (data) {
+          setCategories(data)
+          // Set default category_id if not editing and categories exist
+          if (!event && data.length > 0) {
+            setCategoryId(data[0].id)
+          } else if (!event && data.length === 0) {
+            setError('Nessuna categoria disponibile. Contatta il supporto.')
+          }
+        }
+      } catch (err) {
+        console.error('Exception loading categories:', err)
+        setError('Errore imprevisto nel caricamento delle categorie')
+      }
+    }
+
+    loadCategories()
+  }, [event])
+
+  // Handle event data
   useEffect(() => {
     if (event) {
       setTitle(event.title || '')
       setDescription(event.description || '')
       setStartTime(formatDateTimeLocal(event.start_time))
       setEndTime(formatDateTimeLocal(event.end_time))
-      setCategory(event.category || 'other')
       setImportance(event.importance || 3)
       setLocation(event.location || '')
       setIsAllDay(event.all_day || false)
+
+      // Handle category_id or migrate from old category field
+      if (event.category_id) {
+        setCategoryId(event.category_id)
+      } else if (event.category && categories.length > 0) {
+        // Migrate old category enum to category_id
+        const categoryMap: Record<string, string> = {
+          meeting: 'Meeting',
+          deep_work: 'Deep Work',
+          admin: 'Admin',
+          personal: 'Personal',
+          break: 'Break',
+          other: 'Other',
+        }
+        const categoryName = categoryMap[event.category]
+        const matchedCategory = categories.find(
+          (c) => c.name.toLowerCase() === categoryName?.toLowerCase()
+        )
+        if (matchedCategory) {
+          setCategoryId(matchedCategory.id)
+        }
+      }
     } else {
       // New event - set default times
       const now = new Date()
@@ -43,7 +106,7 @@ export default function EventModal({ event, onClose, onSave }: EventModalProps) 
       setStartTime(formatDateTimeLocal(now.toISOString()))
       setEndTime(formatDateTimeLocal(later.toISOString()))
     }
-  }, [event])
+  }, [event, categories])
 
   const formatDateTimeLocal = (isoString: string) => {
     const date = new Date(isoString)
@@ -82,6 +145,12 @@ export default function EventModal({ event, onClose, onSave }: EventModalProps) 
       return
     }
 
+    if (!categoryId && categories.length > 0) {
+      setError('Seleziona una categoria')
+      setLoading(false)
+      return
+    }
+
     const start = new Date(startTime)
     const end = new Date(endTime)
 
@@ -104,7 +173,7 @@ export default function EventModal({ event, onClose, onSave }: EventModalProps) 
       description: description.trim() || null,
       start_time: start.toISOString(),
       end_time: end.toISOString(),
-      category,
+      category_id: categoryId || null,
       importance,
       location: location.trim() || null,
       all_day: isAllDay,
@@ -305,19 +374,26 @@ export default function EventModal({ event, onClose, onSave }: EventModalProps) 
 
           <div>
             <label className="mb-2 block text-sm font-medium">
-              Categoria
+              Categoria *
             </label>
             <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value as EventType['category'])}
+              value={categoryId}
+              onChange={(e) => setCategoryId(e.target.value)}
               className="w-full rounded-lg border border-input bg-background px-4 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-ring"
+              disabled={categories.length === 0}
             >
-              <option value="meeting">Meeting</option>
-              <option value="deep_work">Deep Work</option>
-              <option value="admin">Admin</option>
-              <option value="personal">Personale</option>
-              <option value="break">Pausa</option>
-              <option value="other">Altro</option>
+              {categories.length === 0 ? (
+                <option value="">Nessuna categoria disponibile</option>
+              ) : (
+                <>
+                  {!categoryId && <option value="">-- Seleziona una categoria --</option>}
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </option>
+                  ))}
+                </>
+              )}
             </select>
           </div>
 

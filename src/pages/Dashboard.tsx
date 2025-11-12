@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { supabase, Event as EventType } from '@/lib/supabase'
+import { supabase, Event as EventType, UserCategory } from '@/lib/supabase'
 import { Calendar, Clock, TrendingUp, BookOpen } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { calculateCategoryStats } from '@/lib/analytics/timeStats'
@@ -7,6 +7,7 @@ import { calculateCategoryStats } from '@/lib/analytics/timeStats'
 export default function Dashboard() {
   const [todayEvents, setTodayEvents] = useState<EventType[]>([])
   const [weekEvents, setWeekEvents] = useState<EventType[]>([])
+  const [categories, setCategories] = useState<UserCategory[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -14,8 +15,9 @@ export default function Dashboard() {
   }, [])
 
   const loadDashboardData = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
 
     const today = new Date()
     today.setHours(0, 0, 0, 0)
@@ -26,6 +28,19 @@ export default function Dashboard() {
     weekStart.setDate(today.getDate() - today.getDay() + 1) // Lunedì
     const weekEnd = new Date(weekStart)
     weekEnd.setDate(weekStart.getDate() + 7)
+
+      // Load user categories
+      const { data: categoriesData, error: categoriesError } = await supabase
+        .from('user_categories')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('display_order', { ascending: true })
+
+      if (categoriesError) {
+        console.error('Error loading categories:', categoriesError)
+      } else {
+        setCategories(categoriesData || [])
+      }
 
     // Eventi di oggi
     const { data: todayData } = await supabase
@@ -46,7 +61,11 @@ export default function Dashboard() {
 
     setTodayEvents(todayData || [])
     setWeekEvents(weekData || [])
-    setLoading(false)
+      setLoading(false)
+    } catch (err) {
+      console.error('Error loading dashboard data:', err)
+      setLoading(false)
+    }
   }
 
   const getNextEvent = () => {
@@ -75,7 +94,7 @@ export default function Dashboard() {
 
   const nextEvent = getNextEvent()
   const todayHours = calculateTodayHours()
-  const categoryStats = calculateCategoryStats(weekEvents)
+  const categoryStats = calculateCategoryStats(weekEvents, categories)
   const topCategory = categoryStats[0]
 
   if (loading) {

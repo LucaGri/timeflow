@@ -21,6 +21,7 @@ import ResetPassword from './pages/auth/ResetPassword'
 
 // Components
 import LoadingScreen from './components/ui/LoadingScreen'
+import { ErrorBoundary } from './components/ui/ErrorBoundary'
 
 function App() {
   const [session, setSession] = useState<Session | null>(null)
@@ -79,7 +80,14 @@ function App() {
         }
       >
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/calendar" element={<Calendar />} />
+        <Route
+          path="/calendar"
+          element={
+            <ErrorBoundary fallbackMessage="Errore nel caricamento del calendario. Verifica che la migrazione del database sia stata eseguita.">
+              <Calendar />
+            </ErrorBoundary>
+          }
+        />
         <Route path="/analytics" element={<Analytics />} />
         <Route path="/journal" element={<Journal />} />
         <Route path="/settings" element={<Settings />} />
