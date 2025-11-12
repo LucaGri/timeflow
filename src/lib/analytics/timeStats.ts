@@ -32,19 +32,6 @@ const getEventDuration = (event: EventType): number => {
   return (end.getTime() - start.getTime()) / (1000 * 60)
 }
 
-// Ottieni il colore per categoria
-const getCategoryColor = (category: EventType['category']): string => {
-  const colors: Record<EventType['category'], string> = {
-    meeting: '#3b82f6',
-    deep_work: '#8b5cf6',
-    admin: '#64748b',
-    personal: '#10b981',
-    break: '#f59e0b',
-    other: '#6b7280',
-  }
-  return colors[category] || '#6b7280'
-}
-
 // Statistiche per categoria (supporta categorie dinamiche)
 export const calculateCategoryStats = (
   events: EventType[],

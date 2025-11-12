@@ -4,15 +4,6 @@ interface CategoryStatsCardProps {
   stats: CategoryStats[]
 }
 
-const categoryLabels: Record<string, string> = {
-  meeting: 'Meeting',
-  deep_work: 'Deep Work',
-  admin: 'Admin',
-  personal: 'Personale',
-  break: 'Pause',
-  other: 'Altro',
-}
-
 export default function CategoryStatsCard({ stats }: CategoryStatsCardProps) {
   if (stats.length === 0) {
     return (
@@ -31,7 +22,7 @@ export default function CategoryStatsCard({ stats }: CategoryStatsCardProps) {
       
       <div className="space-y-4">
         {stats.map((stat) => (
-          <div key={stat.category}>
+          <div key={stat.categoryId}>
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <div
@@ -39,7 +30,7 @@ export default function CategoryStatsCard({ stats }: CategoryStatsCardProps) {
                   style={{ backgroundColor: stat.color }}
                 />
                 <span className="font-medium">
-                  {categoryLabels[stat.category] || stat.category}
+                  {stat.categoryName}
                 </span>
               </div>
               <div className="flex items-center gap-4">

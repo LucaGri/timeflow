@@ -200,7 +200,7 @@ export default function Analytics() {
             <div className="rounded-lg border bg-card p-3 sm:p-4">
               <p className="text-xs sm:text-sm text-muted-foreground mb-1">Categoria Più Usata</p>
               <p className="text-base sm:text-xl lg:text-2xl font-bold capitalize truncate">
-                {categoryStats[0]?.category.replace('_', ' ') || '-'}
+                {categoryStats[0]?.categoryName || '-'}
               </p>
             </div>
             <div className="rounded-lg border bg-card p-3 sm:p-4">

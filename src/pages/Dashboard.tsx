@@ -83,13 +83,10 @@ export default function Dashboard() {
     return Math.round((totalMinutes / 60) * 10) / 10
   }
 
-  const categoryLabels: Record<string, string> = {
-    meeting: 'Meeting',
-    deep_work: 'Deep Work',
-    admin: 'Admin',
-    personal: 'Personale',
-    break: 'Pause',
-    other: 'Altro',
+  const getCategoryName = (categoryId: string | null) => {
+    if (!categoryId) return 'Senza categoria'
+    const category = categories.find(c => c.id === categoryId)
+    return category?.name || 'Sconosciuta'
   }
 
   const nextEvent = getNextEvent()
@@ -149,7 +146,7 @@ export default function Dashboard() {
             <BookOpen className="h-4 w-4 text-primary" />
           </div>
           <p className="text-base sm:text-lg font-bold capitalize">
-            {topCategory ? categoryLabels[topCategory.category] : 'N/A'}
+            {topCategory ? topCategory.categoryName : 'N/A'}
           </p>
         </div>
       </div>
@@ -226,7 +223,7 @@ export default function Dashboard() {
                       </p>
                     </div>
                     <span className="inline-flex self-start sm:self-center px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium capitalize whitespace-nowrap">
-                      {categoryLabels[event.category] || event.category}
+                      {getCategoryName(event.category_id)}
                     </span>
                   </div>
                 </div>

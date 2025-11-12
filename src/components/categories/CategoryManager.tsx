@@ -145,13 +145,13 @@ export function CategoryManager({ userId, onUpdate }: CategoryManagerProps) {
     }
   }
 
-  const handleColorSelect = (categoryId: string, color: string) => {
+  const handleColorSelect = (color: string) => {
     setEditingColor(color)
     setShowColorPicker(null)
     setCustomHex('')
   }
 
-  const handleCustomHexApply = (categoryId: string) => {
+  const handleCustomHexApply = () => {
     if (validateHexColor(customHex)) {
       setEditingColor(customHex)
       setShowColorPicker(null)
@@ -435,7 +435,7 @@ export function CategoryManager({ userId, onUpdate }: CategoryManagerProps) {
                           {PRESET_COLORS.map((color) => (
                             <button
                               key={color.value}
-                              onClick={() => handleColorSelect(category.id, color.value)}
+                              onClick={() => handleColorSelect(color.value)}
                               className="w-8 h-8 rounded-full border-2 border-gray-200 hover:border-gray-400 transition-colors"
                               style={{ backgroundColor: color.value }}
                               title={color.name}
@@ -458,7 +458,7 @@ export function CategoryManager({ userId, onUpdate }: CategoryManagerProps) {
                             maxLength={7}
                           />
                           <button
-                            onClick={() => handleCustomHexApply(category.id)}
+                            onClick={handleCustomHexApply}
                             disabled={!validateHexColor(customHex)}
                             className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
