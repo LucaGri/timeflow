@@ -1,6 +1,5 @@
 import { Event as EventType } from '@/lib/supabase'
 import { format, isSameDay } from 'date-fns'
-import { it } from 'date-fns/locale'
 import { getCategoryColor } from '@/lib/utils'
 import { Conflict } from '@/lib/conflicts/detectConflicts'
 

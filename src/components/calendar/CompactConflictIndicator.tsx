@@ -9,7 +9,6 @@ interface CompactConflictIndicatorProps {
 export function CompactConflictIndicator({ conflicts, onClick }: CompactConflictIndicatorProps) {
   const criticalCount = conflicts.filter(c => c.severity === 'high').length
   const warningCount = conflicts.filter(c => c.severity === 'medium').length
-  const totalConflicts = conflicts.length
 
   const getIndicatorContent = () => {
     if (criticalCount > 0) {

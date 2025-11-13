@@ -5,7 +5,6 @@ import { Event as EventType } from '@/lib/supabase'
 import { Button } from '@/components/ui/Button'
 import { Plus, RefreshCw, ChevronLeft, ChevronRight, Settings } from 'lucide-react'
 import EventModal from '@/components/calendar/EventModal'
-import { ConflictIndicatorButton } from '@/components/calendar/ConflictIndicatorButton'
 import { CompactConflictIndicator } from '@/components/calendar/CompactConflictIndicator'
 import { ViewSelector } from '@/components/calendar/ViewSelector'
 import ConflictList from '@/components/calendar/ConflictList'
@@ -72,21 +71,6 @@ export default function Calendar() {
     const newDate = new Date(date)
     const increment = direction === 'next' ? 1 : -1
     setDate(addDays(newDate, increment))
-  }
-
-  // Get title for current view
-  const getViewTitle = () => {
-    switch (view) {
-      case 'month':
-        return format(date, 'MMMM yyyy', { locale: it })
-      case 'week':
-        const weekStart = startOfWeek(date, { locale: it, weekStartsOn: 1 })
-        return format(weekStart, "'Settimana del' d MMMM yyyy", { locale: it })
-      case 'day':
-        return format(date, 'EEEE d MMMM yyyy', { locale: it })
-      case 'agenda':
-        return 'Prossimi eventi'
-    }
   }
 
   // Get compact date for Day view (no year, capitalized)
