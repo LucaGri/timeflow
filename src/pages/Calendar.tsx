@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/Button'
 import { Plus, RefreshCw, ChevronLeft, ChevronRight, Settings } from 'lucide-react'
 import EventModal from '@/components/calendar/EventModal'
 import { ConflictIndicatorButton } from '@/components/calendar/ConflictIndicatorButton'
+import { CompactConflictIndicator } from '@/components/calendar/CompactConflictIndicator'
+import { ViewSelector } from '@/components/calendar/ViewSelector'
 import ConflictList from '@/components/calendar/ConflictList'
 import CustomAgenda from '@/components/calendar/CustomAgenda'
 import CustomWeek from '@/components/calendar/CustomWeek'
@@ -14,7 +16,7 @@ import CustomMonth from '@/components/calendar/CustomMonth'
 import MobileDayView from '@/components/calendar/MobileDayView'
 import { syncFromGoogle } from '@/lib/google/calendar'
 import { detectAllConflicts, Conflict } from '@/lib/conflicts/detectConflicts'
-import { addDays, addWeeks, addMonths, startOfWeek, format } from 'date-fns'
+import { addDays, addWeeks, addMonths, startOfWeek, endOfWeek, format } from 'date-fns'
 import { it } from 'date-fns/locale'
 import { CategoryManageModal } from '@/components/categories/CategoryManageModal'
 
@@ -85,6 +87,47 @@ export default function Calendar() {
       case 'agenda':
         return 'Prossimi eventi'
     }
+  }
+
+  // Get compact date for Day view (no year, capitalized)
+  const getCompactDayTitle = () => {
+    return format(date, 'EEEE d MMMM', { locale: it })
+  }
+
+  // Get week range for Week view (e.g., "10-16 Novembre")
+  const getWeekRange = () => {
+    const weekStart = startOfWeek(date, { weekStartsOn: 1, locale: it })
+    const weekEnd = endOfWeek(date, { weekStartsOn: 1, locale: it })
+
+    const startDay = format(weekStart, 'd')
+    const endDay = format(weekEnd, 'd')
+    const startMonth = format(weekStart, 'MMMM', { locale: it })
+    const endMonth = format(weekEnd, 'MMMM', { locale: it })
+    const startYear = format(weekStart, 'yyyy')
+    const endYear = format(weekEnd, 'yyyy')
+
+    // Same month: "10-16 Novembre"
+    if (startMonth === endMonth && startYear === endYear) {
+      return `${startDay}-${endDay} ${startMonth}`
+    }
+
+    // Different months, same year: "27 Novembre - 3 Dicembre"
+    if (startYear === endYear) {
+      return `${startDay} ${startMonth} - ${endDay} ${endMonth}`
+    }
+
+    // Different years: "28 Dicembre 2024 - 3 Gennaio 2025"
+    return `${startDay} ${startMonth} ${startYear} - ${endDay} ${endMonth} ${endYear}`
+  }
+
+  // Check if current date is today
+  const isToday = () => {
+    const today = new Date()
+    return (
+      date.getDate() === today.getDate() &&
+      date.getMonth() === today.getMonth() &&
+      date.getFullYear() === today.getFullYear()
+    )
   }
 
   // Load profile to check if Google is connected
@@ -207,125 +250,90 @@ export default function Calendar() {
 
       {/* Desktop View (>= 768px) */}
       <div className="hidden md:flex h-full flex-col p-4 sm:p-6 md:p-8">
-        <div className="mb-4 md:mb-6 pt-12 md:pt-0">
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-3">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold">Calendario</h1>
-              <p className="mt-2 text-sm sm:text-base text-muted-foreground">
-                Gestisci i tuoi eventi e sincronizza con Google Calendar
-              </p>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            <ConflictIndicatorButton
-              conflicts={conflicts}
-              onClick={() => setShowConflictList(true)}
-            />
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowCategoryModal(true)}
-              title="Gestisci Categorie"
-            >
-              <Settings className="mr-0 sm:mr-2 h-4 w-4" />
-              <span className="hidden sm:inline">Categorie</span>
-            </Button>
-            {profile?.google_calendar_connected && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleSyncFromGoogle}
-                disabled={syncing}
-              >
-                <RefreshCw className={`mr-2 h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
-                <span className="hidden sm:inline">{syncing ? 'Sincronizzazione...' : 'Sincronizza'}</span>
-                <span className="sm:hidden">Sync</span>
-              </Button>
-            )}
-            <Button
-              size="sm"
-              onClick={() => {
-                setSelectedEvent(null)
-                setIsModalOpen(true)
-              }}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              <span className="hidden sm:inline">Nuovo Evento</span>
-              <span className="sm:hidden">Nuovo</span>
-            </Button>
-          </div>
-        </div>
+        {/* Compact header spacing for all views */}
+        <div className="mb-4 pt-12 md:pt-0" />
 
         <div className="rounded-lg border bg-card flex-1 flex flex-col min-h-0">
           <div className="h-full flex flex-col">
-            {/* Unified Toolbar for All Views */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 sm:p-4 border-b bg-muted/30">
-              {/* Navigation */}
+            {/* Compact Single-Row Toolbar for All Views */}
+            <div className="flex items-center justify-between gap-3 px-4 py-2.5 border-b bg-background h-[50px]">
+              {/* Left section: View selector + Date navigation */}
+              <div className="flex items-center gap-3">
+                <ViewSelector currentView={view} onViewChange={setView} />
+
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleNavigate('prev')}
+                    className="h-10 w-10 p-0"
+                    title={view === 'day' ? 'Giorno precedente' : view === 'week' ? 'Settimana precedente' : view === 'month' ? 'Mese precedente' : 'Periodo precedente'}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+
+                  <button
+                    onClick={() => handleNavigate('today')}
+                    className={`px-3 py-2 h-10 text-sm font-medium rounded-lg hover:bg-accent transition-colors ${
+                      isToday() ? 'font-bold text-primary' : ''
+                    }`}
+                    title="Vai a oggi"
+                  >
+                    {view === 'day' ? getCompactDayTitle() : view === 'week' ? getWeekRange() : view === 'month' ? format(date, 'MMMM yyyy', { locale: it }) : 'Prossimi Eventi'}
+                  </button>
+
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleNavigate('next')}
+                    className="h-10 w-10 p-0"
+                    title={view === 'day' ? 'Giorno successivo' : view === 'week' ? 'Settimana successiva' : view === 'month' ? 'Mese successivo' : 'Periodo successivo'}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Right section: Action buttons */}
               <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleNavigate('prev')}
-                  className="min-h-[44px] sm:min-h-0"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleNavigate('today')}
-                  className="min-h-[44px] sm:min-h-0"
-                >
-                  Oggi
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleNavigate('next')}
-                  className="min-h-[44px] sm:min-h-0"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
+                <CompactConflictIndicator
+                  conflicts={conflicts}
+                  onClick={() => setShowConflictList(true)}
+                />
 
-              <div className="font-semibold text-sm sm:text-base lg:text-lg capitalize truncate">
-                {getViewTitle()}
-              </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowCategoryModal(true)}
+                  className="h-10"
+                  title="Gestisci Categorie"
+                >
+                  <Settings className="h-4 w-4 mr-2" />
+                  <span>Categorie</span>
+                </Button>
 
-              {/* View Switcher */}
-              <div className="flex gap-1 sm:gap-2 overflow-x-auto">
+                {profile?.google_calendar_connected && (
+                  <button
+                    onClick={handleSyncFromGoogle}
+                    disabled={syncing}
+                    className="inline-flex items-center justify-center h-10 w-10 p-0 rounded-lg border border-input bg-background hover:bg-accent transition-colors disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-ring"
+                    title={syncing ? 'Sincronizzazione in corso...' : 'Sincronizza con Google Calendar'}
+                    aria-label="Sincronizza"
+                  >
+                    <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
+                  </button>
+                )}
+
                 <Button
-                  variant={view === 'month' ? 'default' : 'outline'}
                   size="sm"
-                  onClick={() => setView('month')}
-                  className="min-h-[44px] sm:min-h-0 text-xs sm:text-sm whitespace-nowrap hidden md:inline-flex"
+                  onClick={() => {
+                    setSelectedEvent(null)
+                    setIsModalOpen(true)
+                  }}
+                  className="h-10"
                 >
-                  Mese
-                </Button>
-                <Button
-                  variant={view === 'week' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setView('week')}
-                  className="min-h-[44px] sm:min-h-0 text-xs sm:text-sm whitespace-nowrap hidden sm:inline-flex"
-                >
-                  Settimana
-                </Button>
-                <Button
-                  variant={view === 'day' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setView('day')}
-                  className="min-h-[44px] sm:min-h-0 text-xs sm:text-sm whitespace-nowrap"
-                >
-                  Giorno
-                </Button>
-                <Button
-                  variant={view === 'agenda' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setView('agenda')}
-                  className="min-h-[44px] sm:min-h-0 text-xs sm:text-sm whitespace-nowrap"
-                >
-                  Agenda
+                  <Plus className="h-4 w-4 mr-2" />
+                  <span>Nuovo</span>
                 </Button>
               </div>
             </div>

@@ -78,18 +78,17 @@ export default function CustomWeek({ events, date, onSelectEvent, onSelectSlot, 
         <div className="min-h-full">
           {/* Sticky Header Container */}
           <div className="sticky top-0 z-10">
-            {/* Days Header */}
-            <div className="grid border-b bg-muted" style={{ gridTemplateColumns: '60px repeat(7, 1fr)' }}>
-              <div className="p-3 border-r font-semibold text-sm border-b-0">Ora</div>
+            {/* Days Header - Compact Single Line */}
+            <div className="grid border-b bg-gray-50" style={{ gridTemplateColumns: '60px repeat(7, 1fr)' }}>
+              <div className="py-2 border-r font-medium text-sm text-center">Ora</div>
               {days.map((day, index) => (
                 <div
                   key={day.toISOString()}
-                  className={`p-3 text-center font-semibold border-b-0 ${index < 6 ? 'border-r' : ''} ${
-                    isToday(day) ? 'bg-primary text-primary-foreground' : ''
+                  className={`py-2 text-center font-medium text-sm border-b-0 ${index < 6 ? 'border-r' : ''} ${
+                    isToday(day) ? 'bg-blue-500 text-white font-bold border-t-4 border-blue-600' : ''
                   }`}
                 >
-                  <div className="text-xs uppercase">{format(day, 'EEE', { locale: it })}</div>
-                  <div className="text-lg">{format(day, 'd')}</div>
+                  {format(day, 'EEE d', { locale: it }).toUpperCase()}
                 </div>
               ))}
             </div>

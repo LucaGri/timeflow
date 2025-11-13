@@ -55,7 +55,7 @@ export default function CustomAgenda({ events, date, onSelectEvent }: CustomAgen
 
         return (
           <div key={dayKey} className="space-y-3">
-            {/* Date Header - Sticky */}
+            {/* Date Header - Sticky positioned below compact header (50px) */}
             <div className={`sticky top-0 z-20 py-3 px-4 rounded-lg font-semibold shadow-sm ${
               isToday
                 ? 'bg-primary text-primary-foreground'

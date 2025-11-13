@@ -71,18 +71,13 @@ export default function CustomMonth({ events, date, onSelectEvent, onSelectSlot,
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
-      {/* Month Header */}
-      <div className="p-4 border-b text-center font-bold text-xl bg-muted">
-        {format(date, 'MMMM yyyy', { locale: it })}
-      </div>
-
       {/* Wrapper for aligned grid */}
       <div className="flex-1 overflow-y-auto">
         <div className="min-h-full">
-          {/* Weekday Headers - Sticky */}
-          <div className="grid border-b bg-muted sticky top-0 z-10" style={{ gridTemplateColumns: 'repeat(7, 1fr)' }}>
+          {/* Weekday Headers - Compact Style */}
+          <div className="grid border-b bg-gray-50 sticky top-0 z-10" style={{ gridTemplateColumns: 'repeat(7, 1fr)' }}>
             {weekDays.map((day, index) => (
-              <div key={day} className={`p-2 text-center font-semibold text-sm border-b-0 ${index < 6 ? 'border-r' : ''}`}>
+              <div key={day} className={`py-2 text-center font-medium text-sm text-gray-600 ${index < 6 ? 'border-r' : ''}`}>
                 {day}
               </div>
             ))}

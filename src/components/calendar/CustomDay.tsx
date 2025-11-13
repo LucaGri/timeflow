@@ -69,17 +69,9 @@ export default function CustomDay({ events, date, onSelectEvent, onSelectSlot, c
 
   return (
     <div className="h-full flex flex-col">
-      {/* Day Header */}
-      <div className={`p-4 border-b text-center font-semibold text-lg sticky top-0 z-10 ${
-        isToday ? 'bg-primary text-primary-foreground' : 'bg-muted'
-      }`}>
-        {format(date, 'EEEE d MMMM yyyy', { locale: it })}
-      </div>
-
-      {/* All-Day Events Section */}
+      {/* All-Day Events Section - No label, appears only when events exist */}
       {getAllDayEvents().length > 0 && (
-        <div className="border-b bg-background p-4">
-          <div className="text-xs font-medium text-muted-foreground mb-2">Eventi giornalieri</div>
+        <div className="border-b bg-background p-3">
           <div className="space-y-2">
             {getAllDayEvents().map((event) => {
               const category = event.resource?.category || 'other'
@@ -159,9 +151,12 @@ export default function CustomDay({ events, date, onSelectEvent, onSelectSlot, c
                 >
                   <div className="flex items-start justify-between gap-2 h-full">
                     <div className="flex-1 min-h-0">
-                      <div className="font-semibold text-base mb-1">{event.title}</div>
-                      <div className="text-sm opacity-90">
-                        {format(event.start, 'HH:mm')} - {format(event.end, 'HH:mm')}
+                      {/* Title and time on same line with bullet separator */}
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        <span className="font-semibold text-base">{event.title}</span>
+                        <span className="text-sm opacity-75 font-normal">
+                          • {format(event.start, 'HH:mm')} - {format(event.end, 'HH:mm')}
+                        </span>
                       </div>
                       {event.resource?.description && height > 80 && (
                         <div className="text-sm opacity-80 mt-2 line-clamp-2">
