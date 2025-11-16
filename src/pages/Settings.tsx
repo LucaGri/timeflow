@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase, Profile, CalendarProvider } from '@/lib/supabase'
 import { Button } from '@/components/ui/Button'
 import { initiateGoogleAuth, disconnectGoogle } from '@/lib/google/auth'
-import { initiateMicrosoftAuth, disconnectMicrosoft } from '@/lib/microsoft/auth'
+// import { initiateMicrosoftAuth, disconnectMicrosoft } from '@/lib/microsoft/auth' // DISABLED for MVP
 import { Calendar, CheckCircle, XCircle, Loader2 } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 import { Eye, EyeOff } from 'lucide-react'
@@ -14,9 +14,9 @@ export default function Settings() {
   const [userId, setUserId] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [disconnecting, setDisconnecting] = useState(false)
-  const [disconnectingMicrosoft, setDisconnectingMicrosoft] = useState(false)
+  // const [disconnectingMicrosoft, setDisconnectingMicrosoft] = useState(false)
   const [googleProvider, setGoogleProvider] = useState<CalendarProvider | null>(null)
-  const [microsoftProvider, setMicrosoftProvider] = useState<CalendarProvider | null>(null)
+  // const [microsoftProvider, setMicrosoftProvider] = useState<CalendarProvider | null>(null)
   const [showChangePassword, setShowChangePassword] = useState(false)
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -54,16 +54,16 @@ export default function Settings() {
 
       setGoogleProvider(googleProv)
 
-      // Load Microsoft provider connection
-      const { data: msProvider } = await supabase
-        .from('calendar_providers')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('provider', 'microsoft')
-        .eq('is_active', true)
-        .maybeSingle()
+      // Load Microsoft provider connection (DISABLED for MVP)
+      // const { data: msProvider } = await supabase
+      //   .from('calendar_providers')
+      //   .select('*')
+      //   .eq('user_id', user.id)
+      //   .eq('provider', 'microsoft')
+      //   .eq('is_active', true)
+      //   .maybeSingle()
 
-      setMicrosoftProvider(msProvider)
+      // setMicrosoftProvider(msProvider)
     }
     setLoading(false)
   }
@@ -72,23 +72,24 @@ export default function Settings() {
     initiateGoogleAuth()
   }
 
-  const handleConnectMicrosoft = async () => {
-    await initiateMicrosoftAuth()
-  }
+  // DISABLED for MVP - Microsoft Calendar integration
+  // const handleConnectMicrosoft = async () => {
+  //   await initiateMicrosoftAuth()
+  // }
 
-  const handleDisconnectMicrosoft = async () => {
-    if (!confirm('Are you sure you want to disconnect Microsoft Calendar?')) return
+  // const handleDisconnectMicrosoft = async () => {
+  //   if (!confirm('Are you sure you want to disconnect Microsoft Calendar?')) return
 
-    setDisconnectingMicrosoft(true)
-    try {
-      await disconnectMicrosoft()
-      await loadProfile()
-    } catch (error) {
-      console.error('Error disconnecting Microsoft:', error)
-      alert('Error during disconnection')
-    }
-    setDisconnectingMicrosoft(false)
-  }
+  //   setDisconnectingMicrosoft(true)
+  //   try {
+  //     await disconnectMicrosoft()
+  //     await loadProfile()
+  //   } catch (error) {
+  //     console.error('Error disconnecting Microsoft:', error)
+  //     alert('Error during disconnection')
+  //   }
+  //   setDisconnectingMicrosoft(false)
+  // }
 
   const validatePassword = (pwd: string): string | null => {
   if (pwd.length < 8) return 'La password deve contenere almeno 8 caratteri'

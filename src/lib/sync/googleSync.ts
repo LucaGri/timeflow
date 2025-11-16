@@ -1,8 +1,8 @@
 import { supabase, Event as EventType } from '@/lib/supabase'
-import {
-  createGoogleEvent,
-  updateGoogleEvent,
-} from '@/lib/google/calendar'
+// import {
+//   createGoogleEvent,
+//   updateGoogleEvent,
+// } from '@/lib/google/calendar'
 import { getValidAccessToken } from '@/lib/google/auth'
 import { subMonths, addMonths } from 'date-fns'
 
