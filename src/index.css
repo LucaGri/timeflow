@@ -1,0 +1,193 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 48%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+/* React Big Calendar custom styles */
+.rbc-calendar {
+  @apply bg-background;
+}
+
+.rbc-header {
+  @apply border-border bg-muted/50 font-semibold;
+  padding: 6px 8px !important;
+  font-size: 0.875rem !important;
+}
+
+.rbc-today {
+  @apply bg-primary/5;
+}
+
+.rbc-event {
+  @apply bg-primary text-primary-foreground rounded-md px-2 py-1;
+}
+
+.rbc-event.rbc-selected {
+  @apply bg-primary/90;
+}
+
+.rbc-current-time-indicator {
+  @apply bg-destructive;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-muted/30;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-muted-foreground/30 rounded-lg;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-muted-foreground/50;
+}
+
+/* Loading animation */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Header calendario sticky */
+.rbc-time-view .rbc-time-header {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 10 !important;
+  background: white !important;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+}
+
+/* Dark mode support */
+.dark .rbc-time-view .rbc-time-header {
+  background: hsl(var(--background)) !important;
+}
+
+/* Migliora visibilità orari */
+.rbc-time-view {
+  overflow-y: auto !important;
+}
+
+/* Riduce altezza della barra header con i giorni */
+.rbc-time-header-content {
+  min-height: 40px !important;
+  max-height: 40px !important;
+}
+
+.rbc-time-header.rbc-overflowing {
+  border-right: 1px solid #ddd;
+}
+
+.rbc-rtl .rbc-time-header.rbc-overflowing {
+  border-right-width: 0;
+  border-left: 1px solid #ddd;
+}
+
+/* Rimuove spazio vuoto sopra la prima ora */
+.rbc-time-content > * + * > * {
+  border-left: 1px solid #ddd;
+}
+
+.rbc-day-slot .rbc-time-slot {
+  border-top: 1px solid #f0f0f0;
+}
+
+.rbc-time-content {
+  border-top: none !important;
+}
+
+.rbc-allday-cell {
+  display: none !important;
+}
+
+/* Mostra header nella vista settimana */
+.rbc-time-view .rbc-time-header-content {
+  height: auto !important;
+  min-height: 40px !important;
+}
+
+.rbc-time-view .rbc-time-header-content .rbc-header {
+  display: block !important;
+}
+
+/* Nasconde header SOLO nella vista giorno */
+.rbc-time-view.rbc-day-view .rbc-time-header-content {
+  height: 0 !important;
+  min-height: 0 !important;
+  max-height: 0 !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+}
+
+.rbc-time-header-content:empty {
+  display: none !important;
+}
+
+/* Custom agenda view styles (now using CustomAgenda component) */
+/* Old agenda table styles removed - using card-based layout instead */
