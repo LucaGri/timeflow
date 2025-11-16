@@ -63,8 +63,8 @@ export const getMicrosoftAuthUrl = async (): Promise<string> => {
   const codeVerifier = generateRandomString(128)
   const codeChallenge = await generateCodeChallenge(codeVerifier)
 
-  // Store verifier for later use in token exchange
-  sessionStorage.setItem('microsoft_code_verifier', codeVerifier)
+ // Store verifier for later use in token exchange
+localStorage.setItem('microsoft_code_verifier', codeVerifier)  // ✅ localStorage
 
   authUrl.searchParams.append('client_id', MICROSOFT_CLIENT_ID)
   authUrl.searchParams.append('redirect_uri', REDIRECT_URI)
@@ -74,10 +74,11 @@ export const getMicrosoftAuthUrl = async (): Promise<string> => {
   authUrl.searchParams.append('code_challenge', codeChallenge)
   authUrl.searchParams.append('code_challenge_method', 'S256')
 
-  // Generate and store state for CSRF protection (32+ chars)
-  const state = generateRandomString(32)
-  sessionStorage.setItem('microsoft_oauth_state', state)
-  authUrl.searchParams.append('state', state)
+ // Generate and store state for CSRF protection (32+ chars)
+const state = generateRandomString(32)
+console.log('🔐 Generated state:', state)
+localStorage.setItem('microsoft_oauth_state', state)  // ✅ localStorage invece di sessionStorage
+authUrl.searchParams.append('state', state)
 
   return authUrl.toString()
 }
@@ -98,11 +99,11 @@ export const initiateMicrosoftAuth = async () => {
  */
 export const getCodeVerifier = () => {
   // Retrieve verifier from storage
-  const codeVerifier = sessionStorage.getItem('microsoft_code_verifier')
+  const codeVerifier = localStorage.getItem('microsoft_code_verifier')  // ✅ localStorage
 
   // Clear verifier from storage
   if (codeVerifier) {
-    sessionStorage.removeItem('microsoft_code_verifier')
+    localStorage.removeItem('microsoft_code_verifier')  // ✅ localStorage
   }
 
   // Note: Even though we have PKCE verifier, the serverless function

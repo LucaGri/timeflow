@@ -180,7 +180,7 @@ export async function syncMicrosoftToTimeFlow(
  * This will be re-enabled when bidirectional sync is required
  */
 export async function syncTimeFlowToMicrosoft(
-  provider: CalendarProvider
+
 ): Promise<MicrosoftSyncResult> {
   // Return empty result - export disabled for MVP
   return {

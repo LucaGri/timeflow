@@ -2,7 +2,6 @@ import { supabase } from '@/lib/supabase'
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
 const REDIRECT_URI = `${window.location.origin}/auth/callback`
-const API_BASE_URL = import.meta.env.VITE_APP_URL || window.location.origin
 
 // Scopes necessari per Google Calendar
 const SCOPES = [

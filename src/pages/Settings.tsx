@@ -327,7 +327,17 @@ const handleChangePassword = async (e: React.FormEvent) => {
         </div>
       </div>
 
-      {/* Microsoft Calendar Integration */}
+      {/* 
+      ========================================
+      MICROSOFT CALENDAR - TEMPORANEAMENTE DISABILITATO
+      ========================================
+      
+      Motivo: Costi Azure non sostenibili per MVP
+      Piano: Riabilitare come feature Premium in Phase 2
+      
+      Per riattivare: rimuovi questo commento multi-linea
+      
+      {/* Microsoft Calendar Integration 
       <div className="mb-6 sm:mb-8 rounded-lg border bg-card p-4 sm:p-6">
         <div className="flex items-start justify-between mb-3 sm:mb-4 gap-3">
           <div className="flex-1">
@@ -405,6 +415,7 @@ const handleChangePassword = async (e: React.FormEvent) => {
           )}
         </div>
       </div>
+      */}
 
       {/* Password Section */}
       <div className="mb-6 sm:mb-8 rounded-lg border bg-card p-4 sm:p-6">

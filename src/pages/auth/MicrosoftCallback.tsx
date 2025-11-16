@@ -38,15 +38,18 @@ export default function MicrosoftCallback() {
         }
 
         // Get saved state
-        const stateSaved = sessionStorage.getItem('microsoft_oauth_state')
+        const stateSaved = localStorage.getItem('microsoft_oauth_state')  // ✅ localStorage
+        console.log('📥 Received state from Microsoft:', stateReceived)  // ✅ AGGIUNGI
+        console.log('💾 Saved state in localStorage:', stateSaved)  // ✅ AGGIUNGI
+        console.log('🔍 States match?', stateReceived === stateSaved)  // ✅ AGGIUNGI
         console.log('🔍 State comparison:', { stateReceived, stateSaved })
 
         // CRITICAL: Only validate if state was sent
         if (stateReceived && stateSaved) {
           if (stateReceived !== stateSaved) {
             console.error('State mismatch!')
-            sessionStorage.removeItem('microsoft_oauth_state')
-            sessionStorage.removeItem('microsoft_code_verifier')
+            localStorage.removeItem('microsoft_oauth_state')  // ✅ localStorage
+            localStorage.removeItem('microsoft_code_verifier')  // ✅ localStorage
             setError('Invalid state parameter - possible CSRF attack')
             setTimeout(() => navigate('/settings?error=invalid_state'), 3000)
             return
@@ -57,7 +60,7 @@ export default function MicrosoftCallback() {
         }
 
         // Clean up state
-        sessionStorage.removeItem('microsoft_oauth_state')
+        localStorage.removeItem('microsoft_oauth_state')  // ✅ localStorage
 
         console.log('✅ State validated, handling callback via serverless function...')
 
