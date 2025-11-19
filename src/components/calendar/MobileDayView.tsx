@@ -31,7 +31,6 @@ export default function MobileDayView({
   onDateChange,
   onDirectDateChange,
   onEventClick,
-  onCreateEvent,
   currentView,
   onViewChange,
 }: MobileDayViewProps) {
