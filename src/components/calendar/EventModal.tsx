@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react'
 import { supabase, Event as EventType, UserCategory } from '@/lib/supabase'
 import { Button } from '@/components/ui/Button'
-import { X, Trash2, MapPin } from 'lucide-react'
+import { X, Trash2, MapPin, Video } from 'lucide-react'
 import { setWorkingHours } from '@/lib/constants'
 import { syncAfterEventChange } from '@/lib/sync'
+import { DailyProvider } from '@daily-co/daily-react'
+import { DailyVideoRoom } from '../VideoCall/DailyVideoRoom'
+import { createVideoRoomForEvent } from '@/services/videoService'
 
 interface EventModalProps {
   event: EventType | null
@@ -23,270 +26,192 @@ export default function EventModal({ event, onClose, onSave }: EventModalProps) 
   const [isAllDay, setIsAllDay] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  
+  // Video call states
+  const [isVideoMeeting, setIsVideoMeeting] = useState(false)
+  const [inCall, setInCall] = useState(false)
+  const [videoRoomUrl, setVideoRoomUrl] = useState<string>('')
+  const [creatingRoom, setCreatingRoom] = useState(false)
 
-  // Load user categories
   useEffect(() => {
-    const loadCategories = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) {
-          setError('Utente non autenticato')
-          return
-        }
-
-        const { data, error } = await supabase
-          .from('user_categories')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('display_order', { ascending: true })
-
-        if (error) {
-          console.error('Error loading categories:', error)
-          setError('Errore nel caricamento delle categorie. Verifica che la migrazione del database sia stata eseguita.')
-          return
-        }
-
-        if (data) {
-          setCategories(data)
-          // Set default category_id if not editing and categories exist
-          if (!event && data.length > 0) {
-            setCategoryId(data[0].id)
-          } else if (!event && data.length === 0) {
-            setError('Nessuna categoria disponibile. Contatta il supporto.')
-          }
-        }
-      } catch (err) {
-        console.error('Exception loading categories:', err)
-        setError('Errore imprevisto nel caricamento delle categorie')
-      }
-    }
-
     loadCategories()
-  }, [event])
-
-  // Handle event data
-  useEffect(() => {
     if (event) {
       setTitle(event.title || '')
       setDescription(event.description || '')
-      setStartTime(formatDateTimeLocal(event.start_time))
-      setEndTime(formatDateTimeLocal(event.end_time))
+      setStartTime(event.start_time || '')
+      setEndTime(event.end_time || '')
+      setCategoryId(event.category_id || '')
       setImportance(event.importance || 3)
       setLocation(event.location || '')
-      setIsAllDay(event.all_day || false)
-
-      // Handle category_id or migrate from old category field
-      if (event.category_id) {
-        setCategoryId(event.category_id)
-      } else if (event.category && categories.length > 0) {
-        // Migrate old category enum to category_id
-        const categoryMap: Record<string, string> = {
-          meeting: 'Meeting',
-          deep_work: 'Deep Work',
-          admin: 'Admin',
-          personal: 'Personal',
-          break: 'Break',
-          other: 'Other',
-        }
-        const categoryName = categoryMap[event.category]
-        const matchedCategory = categories.find(
-          (c) => c.name.toLowerCase() === categoryName?.toLowerCase()
-        )
-        if (matchedCategory) {
-          setCategoryId(matchedCategory.id)
-        }
-      }
-    } else {
-      // New event - set default times
-      const now = new Date()
-      now.setMinutes(0, 0, 0)
-      const later = new Date(now)
-      later.setHours(later.getHours() + 1)
-
-      setStartTime(formatDateTimeLocal(now.toISOString()))
-      setEndTime(formatDateTimeLocal(later.toISOString()))
+      setIsAllDay(event.is_all_day || false)
+      setIsVideoMeeting(event.is_video_meeting || false)
+      setVideoRoomUrl(event.video_room_url || '')
     }
-  }, [event, categories])
+  }, [event])
 
-  const formatDateTimeLocal = (isoString: string) => {
-    const date = new Date(isoString)
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    const day = String(date.getDate()).padStart(2, '0')
-    const hours = String(date.getHours()).padStart(2, '0')
-    const minutes = String(date.getMinutes()).padStart(2, '0')
-    return `${year}-${month}-${day}T${hours}:${minutes}`
+  async function loadCategories() {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    const { data } = await supabase
+      .from('user_categories')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('name')
+
+    if (data) setCategories(data)
   }
 
   const handleAllDayToggle = (checked: boolean) => {
     setIsAllDay(checked)
-
     if (checked) {
-      // Set to working hours (9 AM - 6 PM)
-      const startDate = new Date(startTime)
-      const endDate = new Date(startTime) // Use same date as start
+      const dateStr = startTime.split('T')[0] || new Date().toISOString().split('T')[0]
+      setStartTime(`${dateStr}T${setWorkingHours.start}`)
+      setEndTime(`${dateStr}T${setWorkingHours.end}`)
+    }
+  }
 
-      const workStart = setWorkingHours(startDate, true)
-      const workEnd = setWorkingHours(endDate, false)
+  const handleJoinMeeting = async () => {
+    try {
+      setCreatingRoom(true)
+      
+      // Se non esiste room, creala
+      if (!videoRoomUrl && event?.id) {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) throw new Error('Not authenticated')
 
-      setStartTime(formatDateTimeLocal(workStart.toISOString()))
-      setEndTime(formatDateTimeLocal(workEnd.toISOString()))
+        const room = await createVideoRoomForEvent(
+          event.id,
+          event.title || 'Meeting',
+          user.id
+        )
+        setVideoRoomUrl(room.url)
+      }
+      
+      setInCall(true)
+    } catch (error) {
+      console.error('Failed to join meeting:', error)
+      setError('Impossibile avviare il meeting. Riprova.')
+    } finally {
+      setCreatingRoom(false)
     }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!title.trim()) {
+      setError('Il titolo è obbligatorio')
+      return
+    }
+
     setLoading(true)
     setError(null)
 
-    if (!title.trim()) {
-      setError('Il titolo è obbligatorio')
-      setLoading(false)
-      return
-    }
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Non autenticato')
 
-    if (!categoryId && categories.length > 0) {
-      setError('Seleziona una categoria')
-      setLoading(false)
-      return
-    }
+      const eventData = {
+        title,
+        description,
+        start_time: startTime,
+        end_time: endTime,
+        category_id: categoryId || null,
+        importance,
+        location,
+        is_all_day: isAllDay,
+        user_id: user.id,
+        is_video_meeting: isVideoMeeting,
+      }
 
-    const start = new Date(startTime)
-    const end = new Date(endTime)
+      if (event?.id) {
+        // Update existing event
+        const { error: updateError } = await supabase
+          .from('events')
+          .update(eventData)
+          .eq('id', event.id)
 
-    if (end <= start) {
-      setError('La data di fine deve essere successiva alla data di inizio')
-      setLoading(false)
-      return
-    }
+        if (updateError) throw updateError
+      } else {
+        // Create new event
+        const { data: newEvent, error: insertError } = await supabase
+          .from('events')
+          .insert([eventData])
+          .select()
+          .single()
 
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      setError('Utente non autenticato')
-      setLoading(false)
-      return
-    }
+        if (insertError) throw insertError
 
-    const eventData = {
-      user_id: user.id,
-      title: title.trim(),
-      description: description.trim() || null,
-      start_time: start.toISOString(),
-      end_time: end.toISOString(),
-      category_id: categoryId || null,
-      importance,
-      location: location.trim() || null,
-      all_day: isAllDay,
-      // Preserve Google Calendar sync fields when updating
-      ...(event?.id && event.google_event_id ? {
-        google_event_id: event.google_event_id,
-        google_calendar_id: event.google_calendar_id
-      } : {})
-    }
-
-    let result
-
-    if (event?.id) {
-      // Update existing event
-      result = await supabase
-        .from('events')
-        .update(eventData)
-        .eq('id', event.id)
-        .select()
-        .single()
-
-      // Trigger sync to all connected calendars
-      if (result.data) {
-        try {
-          await syncAfterEventChange(result.data.id)
-        } catch (error) {
-          console.error('Failed to sync event:', error)
+        // Se è un video meeting, crea subito la room
+        if (isVideoMeeting && newEvent) {
+          try {
+            const room = await createVideoRoomForEvent(
+              newEvent.id,
+              newEvent.title,
+              user.id
+            )
+            setVideoRoomUrl(room.url)
+          } catch (roomError) {
+            console.error('Failed to create video room:', roomError)
+            // Non bloccare il salvataggio se fallisce la room
+          }
         }
       }
-    } else {
-      // Create new event
-      result = await supabase
-        .from('events')
-        .insert([eventData])
-        .select()
-        .single()
 
-      // Trigger sync to all connected calendars
-      if (result.data) {
-        try {
-          await syncAfterEventChange(result.data.id)
-        } catch (error) {
-          console.error('Failed to sync event:', error)
-        }
-      }
-    }
-
-    if (result.error) {
-      setError(result.error.message)
+      await syncAfterEventChange()
+      onSave()
+      onClose()
+    } catch (error: any) {
+      console.error('Error saving event:', error)
+      setError(error.message || 'Errore durante il salvataggio')
+    } finally {
       setLoading(false)
-      return
     }
-
-    setLoading(false)
-    onSave()
   }
 
   const handleDelete = async () => {
-    if (!event?.id) return
-    if (!confirm('Are you sure you want to delete this event?')) return
+    if (!event?.id || !confirm('Sei sicuro di voler eliminare questo evento?')) return
 
     setLoading(true)
-
-    // Mark event for deletion sync before deleting from DB
-    // This allows the sync manager to delete from connected calendars
     try {
-      // Import delete functions dynamically to avoid circular dependencies
-      const { deleteGoogleEvent } = await import('@/lib/google/calendar')
-      const { deleteMicrosoftEvent } = await import('@/lib/microsoft/calendar')
+      const { error: deleteError } = await supabase
+        .from('events')
+        .delete()
+        .eq('id', event.id)
 
-      // Delete from Google if synced
-      if (event.google_event_id) {
-        try {
-          await deleteGoogleEvent(event.google_event_id)
-        } catch (error) {
-          console.error('Failed to delete from Google:', error)
-        }
-      }
+      if (deleteError) throw deleteError
 
-      // Delete from Microsoft if synced
-      if (event.microsoft_event_id) {
-        try {
-          await deleteMicrosoftEvent(event.microsoft_event_id)
-        } catch (error) {
-          console.error('Failed to delete from Microsoft:', error)
-        }
-      }
-    } catch (error) {
-      console.error('Failed to load calendar modules:', error)
-    }
-
-    // Delete from Supabase
-    const { error } = await supabase
-      .from('events')
-      .delete()
-      .eq('id', event.id)
-
-    if (error) {
-      setError(error.message)
+      await syncAfterEventChange()
+      onSave()
+      onClose()
+    } catch (error: any) {
+      setError(error.message || 'Errore durante l\'eliminazione')
+    } finally {
       setLoading(false)
-      return
     }
+  }
 
-    setLoading(false)
-    onSave()
+  // Se siamo in chiamata, mostra il video full-screen
+  if (inCall && videoRoomUrl) {
+    return (
+      <DailyProvider>
+        <DailyVideoRoom 
+          roomUrl={videoRoomUrl}
+          onLeave={() => {
+            setInCall(false)
+            onClose()
+          }}
+        />
+      </DailyProvider>
+    )
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-0 md:p-4">
-      <div className="w-full h-full md:h-auto md:max-w-2xl md:rounded-lg bg-card shadow-lg flex flex-col md:max-h-[90vh]">
-        {/* Sticky Header */}
-        <div className="sticky top-0 z-10 bg-card border-b px-4 sm:px-6 py-4 flex items-center justify-between md:rounded-t-lg">
-          <h2 className="text-xl sm:text-2xl font-bold">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="relative flex w-full max-w-2xl flex-col rounded-lg bg-white shadow-xl max-h-[90vh]">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b px-4 sm:px-6 py-4">
+          <h2 className="text-lg sm:text-xl font-semibold">
             {event?.id ? 'Modifica Evento' : 'Nuovo Evento'}
           </h2>
           <button
@@ -301,174 +226,199 @@ export default function EventModal({ event, onClose, onSave }: EventModalProps) 
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4">
           <form onSubmit={handleSubmit} className="space-y-4" id="event-form">
-          {error && (
-            <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
-              {error}
-            </div>
-          )}
+            {error && (
+              <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
+                {error}
+              </div>
+            )}
 
-          <div>
-            <label className="mb-2 block text-sm font-medium">
-              Titolo *
-            </label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full rounded-lg border border-input bg-background px-4 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-ring"
-              placeholder="Es: Meeting con il team"
-              required
-            />
-          </div>
+            {/* Video Meeting Toggle - mostra SOLO se è nuovo evento O già abilitato */}
+            {(!event?.id || isVideoMeeting) && (
+              <div className="flex items-center gap-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3">
+                <input
+                  type="checkbox"
+                  id="video-meeting"
+                  checked={isVideoMeeting}
+                  onChange={(e) => setIsVideoMeeting(e.target.checked)}
+                  className="h-4 w-4 rounded border-input"
+                />
+                <label htmlFor="video-meeting" className="text-sm font-medium cursor-pointer flex items-center gap-2">
+                  <Video className="h-4 w-4 text-blue-600" />
+                  Abilita video meeting
+                </label>
+              </div>
+            )}
 
-          <div>
-            <label className="mb-2 block text-sm font-medium">
-              Descrizione
-            </label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full rounded-lg border border-input bg-background px-4 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-ring"
-              placeholder="Aggiungi dettagli..."
-              rows={3}
-            />
-          </div>
+            {/* Join Meeting Button - mostra SOLO se evento già esiste e ha video */}
+            {event?.id && (isVideoMeeting || videoRoomUrl) && (
+              <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Video className="h-5 w-5 text-blue-600" />
+                    <span className="font-medium">Video meeting disponibile</span>
+                  </div>
+                  <Button
+                    type="button"
+                    onClick={handleJoinMeeting}
+                    disabled={creatingRoom}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    {creatingRoom ? 'Preparazione...' : '🎥 Join Meeting'}
+                  </Button>
+                </div>
+              </div>
+            )}
 
-          <div className="flex items-center gap-3 rounded-lg border border-input bg-muted/30 px-4 py-3">
-            <input
-              type="checkbox"
-              id="all-day"
-              checked={isAllDay}
-              onChange={(e) => handleAllDayToggle(e.target.checked)}
-              className="h-4 w-4 rounded border-input"
-            />
-            <label htmlFor="all-day" className="text-sm font-medium cursor-pointer">
-              Evento giornaliero (9:00 - 18:00)
-            </label>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="mb-2 block text-sm font-medium">
-                Inizio *
+                Titolo *
               </label>
               <input
-                type="datetime-local"
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
                 className="w-full rounded-lg border border-input bg-background px-4 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-ring"
+                placeholder="Es: Meeting con il team"
                 required
               />
             </div>
 
             <div>
               <label className="mb-2 block text-sm font-medium">
-                Fine *
+                Descrizione
               </label>
-              <input
-                type="datetime-local"
-                value={endTime}
-                onChange={(e) => setEndTime(e.target.value)}
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
                 className="w-full rounded-lg border border-input bg-background px-4 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-ring"
-                required
+                placeholder="Aggiungi dettagli..."
+                rows={3}
               />
             </div>
-          </div>
 
-          <div>
-            <label className="mb-2 block text-sm font-medium">
-              Categoria *
-            </label>
-            <select
-              value={categoryId}
-              onChange={(e) => setCategoryId(e.target.value)}
-              className="w-full rounded-lg border border-input bg-background px-4 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-ring"
-              disabled={categories.length === 0}
-            >
-              {categories.length === 0 ? (
-                <option value="">Nessuna categoria disponibile</option>
-              ) : (
-                <>
-                  {!categoryId && <option value="">-- Seleziona una categoria --</option>}
-                  {categories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </>
-              )}
-            </select>
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm font-medium">
-              Importanza (1-5)
-            </label>
-            <input
-              type="range"
-              min="1"
-              max="5"
-              value={importance}
-              onChange={(e) => setImportance(Number(e.target.value))}
-              className="w-full"
-            />
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>Bassa</span>
-              <span className="font-medium">{importance}</span>
-              <span>Alta</span>
+            <div className="flex items-center gap-3 rounded-lg border border-input bg-muted/30 px-4 py-3">
+              <input
+                type="checkbox"
+                id="all-day"
+                checked={isAllDay}
+                onChange={(e) => handleAllDayToggle(e.target.checked)}
+                className="h-4 w-4 rounded border-input"
+              />
+              <label htmlFor="all-day" className="text-sm font-medium cursor-pointer">
+                Evento giornaliero (9:00 - 18:00)
+              </label>
             </div>
-          </div>
 
-          <div>
-            <label className="mb-2 block text-sm font-medium">
-              Luogo
-            </label>
-            <div className="flex gap-2">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="mb-2 block text-sm font-medium">
+                  Inizio *
+                </label>
+                <input
+                  type="datetime-local"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                  className="w-full rounded-lg border border-input bg-background px-4 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-ring"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium">
+                  Fine *
+                </label>
+                <input
+                  type="datetime-local"
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
+                  className="w-full rounded-lg border border-input bg-background px-4 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-ring"
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium">
+                Categoria
+              </label>
+              <select
+                value={categoryId}
+                onChange={(e) => setCategoryId(e.target.value)}
+                className="w-full rounded-lg border border-input bg-background px-4 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                <option value="">Nessuna categoria</option>
+                {categories.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium">
+                Importanza: {importance}
+              </label>
+              <input
+                type="range"
+                min="1"
+                max="5"
+                value={importance}
+                onChange={(e) => setImportance(parseInt(e.target.value))}
+                className="w-full"
+              />
+              <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                <span>Bassa</span>
+                <span>Alta</span>
+              </div>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium flex items-center gap-2">
+                <MapPin className="h-4 w-4" />
+                Luogo
+              </label>
               <input
                 type="text"
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
-                className="flex-1 rounded-lg border border-input bg-background px-4 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-ring"
-                placeholder="Es: Via Roma 123, Milano"
+                className="w-full rounded-lg border border-input bg-background px-4 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-ring"
+                placeholder="Es: Ufficio, Zoom, ecc."
               />
-              {location.trim() && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    const query = encodeURIComponent(location.trim())
-                    window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank')
-                  }}
-                  className="flex items-center gap-2 rounded-lg border border-input bg-background px-4 py-2 hover:bg-accent transition-colors"
-                  title="Apri in Google Maps"
-                >
-                  <MapPin className="h-4 w-4" />
-                  Indicazioni
-                </button>
-              )}
-            </div>
-          </div>
-
-            <div className="flex flex-col sm:flex-row gap-3 pt-4">
-              <Button type="submit" disabled={loading} className="flex-1 min-h-[44px]">
-                {loading ? 'Salvataggio...' : 'Salva'}
-              </Button>
-              {event?.id && (
-                <Button
-                  type="button"
-                  variant="destructive"
-                  onClick={handleDelete}
-                  disabled={loading}
-                  className="min-h-[44px]"
-                >
-                  <Trash2 className="h-4 w-4 sm:mr-2" />
-                  <span className="sm:inline">Elimina</span>
-                </Button>
-              )}
-              <Button type="button" variant="outline" onClick={onClose} className="min-h-[44px]">
-                Annulla
-              </Button>
             </div>
           </form>
+        </div>
+
+        {/* Footer Actions */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 border-t px-4 sm:px-6 py-4">
+          <Button
+            type="submit"
+            form="event-form"
+            disabled={loading}
+            className="min-h-[44px] flex-1 sm:flex-none"
+          >
+            {loading ? 'Salvataggio...' : 'Salva'}
+          </Button>
+          {event?.id && (
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={loading}
+              className="min-h-[44px] flex-1 sm:flex-none"
+            >
+              <Trash2 className="h-4 w-4 sm:mr-2" />
+              <span className="sm:inline">Elimina</span>
+            </Button>
+          )}
+          <Button 
+            type="button" 
+            variant="outline" 
+            onClick={onClose} 
+            className="min-h-[44px] flex-1 sm:flex-none"
+          >
+            Annulla
+          </Button>
         </div>
       </div>
     </div>

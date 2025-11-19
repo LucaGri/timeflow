@@ -82,6 +82,9 @@ export type Event = {
   attendees: any[]
   created_at: string
   updated_at: string
+  video_room_url?: string
+  video_room_name?: string
+  is_video_meeting?: boolean
 }
 
 export type JournalEntry = {
