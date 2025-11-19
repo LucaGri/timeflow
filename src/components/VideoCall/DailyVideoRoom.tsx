@@ -48,7 +48,7 @@ export function DailyVideoRoom({ roomUrl, onLeave }: VideoCallProps) {
       </div>
 
       {/* Video Grid */}
-      <div className="flex-1 p-4">
+      <div className="flex-1 min-h-0 p-4 overflow-hidden">
         {participantIds.length === 0 ? (
           <div className="h-full flex items-center justify-center">
             <div className="text-white text-center">
@@ -57,12 +57,12 @@ export function DailyVideoRoom({ roomUrl, onLeave }: VideoCallProps) {
             </div>
           </div>
         ) : (
-          <div className={`h-full grid gap-4 ${
-            participantIds.length === 1 ? 'grid-cols-1' :
-            participantIds.length === 2 ? 'grid-cols-2' :
-            participantIds.length <= 4 ? 'grid-cols-2 grid-rows-2' :
-            'grid-cols-3'
-          }`}>
+          <div className={`w-full h-full grid gap-4 ${
+              participantIds.length === 1 ? 'grid-cols-1' :
+              participantIds.length === 2 ? 'grid-cols-2' :
+              participantIds.length <= 4 ? 'grid-cols-2 grid-rows-2' :
+              'grid-cols-3'
+              } auto-rows-fr`}>
             {participantIds.map((participantId) => (
               <ParticipantTile
                 key={participantId}
@@ -99,7 +99,7 @@ function ParticipantTile({ participantId }: { participantId: string }) {
               el.srcObject = new MediaStream([videoState.persistentTrack])
             }
           }}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-contain bg-gray-900"
         />
       ) : (
         <div className="w-full h-full flex items-center justify-center bg-gray-700">
