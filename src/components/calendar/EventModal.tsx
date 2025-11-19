@@ -3,7 +3,6 @@ import { supabase, Event as EventType, UserCategory } from '@/lib/supabase'
 import { Button } from '@/components/ui/Button'
 import { X, Trash2, MapPin, Video } from 'lucide-react'
 import { WORKING_HOURS } from '@/lib/constants'
-import { syncAfterEventChange } from '@/lib/sync'
 import { DailyProvider } from '@daily-co/daily-react'
 import { DailyVideoRoom } from '../VideoCall/DailyVideoRoom'
 import { createVideoRoomForEvent } from '@/services/videoService'
@@ -161,7 +160,6 @@ export default function EventModal({ event, onClose, onSave }: EventModalProps) 
         }
       }
 
-      await syncAfterEventChange()
       onSave()
       onClose()
     } catch (error: any) {
@@ -184,7 +182,6 @@ export default function EventModal({ event, onClose, onSave }: EventModalProps) 
 
       if (deleteError) throw deleteError
 
-      await syncAfterEventChange()
       onSave()
       onClose()
     } catch (error: any) {
