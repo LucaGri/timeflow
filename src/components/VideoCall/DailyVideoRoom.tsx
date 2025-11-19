@@ -15,12 +15,17 @@ export function DailyVideoRoom({ roomUrl, onLeave }: VideoCallProps) {
   if (daily && roomUrl) {
     daily.join({ 
       url: roomUrl,
-      // ⬇️ AGGIUNGI QUESTI:
       startAudioOff: false,
       startVideoOff: false
     })
     .then(() => {
       console.log('✅ Joined with audio and video ON')
+      
+      // Forza attivazione audio dopo join (fix per alcuni browser)
+      setTimeout(() => {
+        daily.setLocalAudio(true)
+        console.log('🎤 Audio forcefully enabled')
+      }, 1000)
     })
     .catch((error) => {
       console.error('Failed to join call:', error)
@@ -82,6 +87,7 @@ export function DailyVideoRoom({ roomUrl, onLeave }: VideoCallProps) {
 }
 
 // Componente per ogni partecipante
+// Componente per ogni partecipante
 function ParticipantTile({ participantId }: { participantId: string }) {
   const videoState = useVideoTrack(participantId)
   const audioState = useAudioTrack(participantId)
@@ -89,10 +95,11 @@ function ParticipantTile({ participantId }: { participantId: string }) {
 
   return (
     <div className="relative bg-gray-800 rounded-lg overflow-hidden">
+      {/* VIDEO */}
       {videoState.persistentTrack ? (
         <video
           autoPlay
-          muted={isLocal}
+          muted={isLocal}  // Muta solo per partecipante locale (evita feedback)
           playsInline
           ref={(el) => {
             if (el && videoState.persistentTrack) {
@@ -114,6 +121,20 @@ function ParticipantTile({ participantId }: { participantId: string }) {
         </div>
       )}
       
+      {/* AUDIO - SOLO per partecipanti remoti */}
+      {!isLocal && audioState.persistentTrack && (
+        <audio
+          autoPlay
+          playsInline
+          ref={(el) => {
+            if (el && audioState.persistentTrack) {
+              el.srcObject = new MediaStream([audioState.persistentTrack])
+              el.volume = 1.0  // Volume massimo
+            }
+          }}
+        />
+      )}
+      
       {/* Name Badge */}
       <div className="absolute bottom-2 left-2 bg-black/60 px-3 py-1 rounded-lg">
         <span className="text-white text-sm font-medium">
@@ -121,7 +142,7 @@ function ParticipantTile({ participantId }: { participantId: string }) {
         </span>
       </div>
 
-      {/* Audio indicator */}
+      {/* Audio indicator - mostra solo quando mutato */}
       {audioState.isOff && (
         <div className="absolute top-2 right-2 bg-red-500 rounded-full p-2">
           <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
