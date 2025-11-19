@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase, Event as EventType, UserCategory } from '@/lib/supabase'
 import { Button } from '@/components/ui/Button'
 import { X, Trash2, MapPin, Video } from 'lucide-react'
-import { setWorkingHours } from '@/lib/constants'
+import { WORKING_HOURS } from '@/lib/constants'
 import { syncAfterEventChange } from '@/lib/sync'
 import { DailyProvider } from '@daily-co/daily-react'
 import { DailyVideoRoom } from '../VideoCall/DailyVideoRoom'
@@ -43,7 +43,7 @@ export default function EventModal({ event, onClose, onSave }: EventModalProps) 
       setCategoryId(event.category_id || '')
       setImportance(event.importance || 3)
       setLocation(event.location || '')
-      setIsAllDay(event.is_all_day || false)
+      setIsAllDay(event.all_day || false)
       setIsVideoMeeting(event.is_video_meeting || false)
       setVideoRoomUrl(event.video_room_url || '')
     }
@@ -63,13 +63,16 @@ export default function EventModal({ event, onClose, onSave }: EventModalProps) 
   }
 
   const handleAllDayToggle = (checked: boolean) => {
-    setIsAllDay(checked)
-    if (checked) {
-      const dateStr = startTime.split('T')[0] || new Date().toISOString().split('T')[0]
-      setStartTime(`${dateStr}T${setWorkingHours.start}`)
-      setEndTime(`${dateStr}T${setWorkingHours.end}`)
-    }
+  setIsAllDay(checked)
+  if (checked) {
+    const dateStr = startTime.split('T')[0] || new Date().toISOString().split('T')[0]
+    // Formatta 9 → '09:00', 18 → '18:00'
+    const startHour = String(WORKING_HOURS.START).padStart(2, '0')
+    const endHour = String(WORKING_HOURS.END).padStart(2, '0')
+    setStartTime(`${dateStr}T${startHour}:00`)
+    setEndTime(`${dateStr}T${endHour}:00`)
   }
+}
 
   const handleJoinMeeting = async () => {
     try {
@@ -119,7 +122,7 @@ export default function EventModal({ event, onClose, onSave }: EventModalProps) 
         category_id: categoryId || null,
         importance,
         location,
-        is_all_day: isAllDay,
+        all_day: isAllDay,
         user_id: user.id,
         is_video_meeting: isVideoMeeting,
       }
