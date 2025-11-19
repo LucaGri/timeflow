@@ -17,9 +17,18 @@ const VIEW_LABELS: Record<View, string> = {
 
 export function ViewSelector({ currentView, onViewChange }: ViewSelectorProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
-  const views: View[] = ['month', 'week', 'day', 'agenda']
+  const views: View[] = isMobile
+    ? ['day', 'agenda']  // Mobile: only day and agenda
+    : ['month', 'week', 'day', 'agenda']  // Desktop: all views
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

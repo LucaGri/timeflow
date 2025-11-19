@@ -39,6 +39,7 @@ export default function Calendar() {
   const [showConflictList, setShowConflictList] = useState(false)
   const [showCategoryModal, setShowCategoryModal] = useState(false)
   const [userId, setUserId] = useState<string>('')
+  const [mobileView, setMobileView] = useState<'day' | 'agenda'>('day')
 
   // Navigation handlers
   const handleNavigate = (direction: 'prev' | 'next' | 'today') => {
@@ -179,6 +180,14 @@ export default function Calendar() {
     loadEvents()
   }, [loadEvents])
 
+  // Auto-switch to day view on mobile if incompatible view is selected
+  useEffect(() => {
+    const isMobile = window.innerWidth < 768
+    if (isMobile && (view === 'week' || view === 'month')) {
+      setView('day')
+    }
+  }, [view])
+
   // Handle sync for all connected calendars
   const handleSyncAllCalendars = async () => {
     setSyncing(true)
@@ -254,13 +263,15 @@ export default function Calendar() {
             setSelectedEvent(null)
             setIsModalOpen(true)
           }}
+          currentView={mobileView}
+          onViewChange={setMobileView}
         />
       </div>
 
       {/* Desktop View (>= 768px) */}
       <div className="hidden md:flex h-full flex-col p-4 sm:p-6 md:p-8">
         {/* Compact header spacing for all views */}
-        <div className="mb-4 pt-12 md:pt-0" />
+        <div className="mb-4 pt-2 md:pt-0" />
 
         <div className="rounded-lg border bg-card flex-1 flex flex-col min-h-0">
           <div className="h-full flex flex-col">
